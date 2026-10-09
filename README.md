@@ -15,9 +15,11 @@ No install. No launcher. No queue. Just `index.html` and a pointer lock.
 
 ## ▸ What is this?
 
-WebValo is a fan-made, browser-native tribute to Valorant: pick one of **5 agents**, lock in on the map **FORGE**, earn credits by fragging and spend them in the armory, and fight respawning AI combatants — now **animated 3D skeletons** — with full ability kits: smokes, dashes, teleports, recon bolts, and orbital lasers.
+WebValo is a fan-made, browser-native tribute to Valorant: pick one of **5 agents**, lock in on the map **FORGE**, and play **Team Deathmatch — first to 30 kills (10 minute clock)** against a squad of AI soldiers, with full ability kits: smokes, dashes, teleports, recon bolts, and orbital lasers.
 
-The map geometry, agent card art, and all sound design are procedural (Web Audio). The 3D weapon and character models stream at runtime from CC0 packs on a CDN — [Quaternius](https://quaternius.com) sci-fi guns and [KayKit](https://kaylousberg.com) skeletons — so the repo itself still ships **zero binary assets**. If a model fails to load, the engine falls back to its procedural shapes and plays on.
+The enemies are **procedurally built and animated tactical soldiers** (≈1.8 m tall): every visible body part is its own hitbox, so what you see is exactly what you can shoot — head, body and legs each take their own damage. They path around walls, react with a human-ish delay, strafe, fire visible bursts, chase your last known position, and fall when they die.
+
+Map textures, enemy models, agent card art and all sound design are procedural (Canvas + Web Audio). Only the first-person gun models stream at runtime from a CC0 pack ([Quaternius](https://quaternius.com) sci-fi guns), so the repo ships **zero binary assets**; if they fail to load the engine falls back to a procedural gun.
 
 ## ▸ Agents
 
@@ -33,22 +35,29 @@ The map geometry, agent card art, and all sound design are procedural (Web Audio
 
 | Key | Action |
 |---|---|
-| `WASD` | Move |
-| `Mouse` | Aim · `LMB` Fire |
-| `Space` | Jump · `Shift` Walk |
+| `WASD` | Move · `Shift` walk · `Space` jump |
+| `Mouse` | Aim · `LMB` fire · `RMB` aim down sights (Operator: scope) |
+| `1` / `2` / `Wheel` | Primary / secondary weapon |
 | `R` | Reload |
 | `C` `Q` `E` | Abilities (some, like Raze's Blast Pack, hold **2 charges**) |
 | `X` | Ultimate (charge by getting kills) |
-| `B` | Buy menu — spend your credits |
-| `1–9` | Quick-buy while armory is open |
+| `B` | Armory (works while dead too) |
+| `Tab` | Scoreboard |
 | `Esc` | Pause |
 
-⚙ A **settings** menu (landing page + pause) tunes mouse sensitivity, FOV, master volume, reduced-motion, and an FPS counter — all saved to `localStorage`.
+⚙ **Settings** (landing page + pause): mouse sensitivity, FOV, master volume, **bot difficulty** (easy / normal / hard), damage numbers, reduced motion, FPS counter — all saved to `localStorage`.
 
 ## ▸ The Armory
 
-Classic · Shorty · Sheriff · Spectre · Bulldog · Phantom · Vandal · Operator · Odin.
-Real-ish damage models with headshot multipliers, each with its **own synthesized gunshot**. You start with 800 credits and earn more per kill (bonus for headshots) — buy up, and you drop back to the Classic when you die.
+Valorant-style columns — **Sidearms · SMGs · Rifles · Sniper · Heavy · Shields**:
+Classic · Shorty · Sheriff · Spectre · Bulldog · Phantom · Vandal · Operator · Odin, plus Light (+25) and Heavy (+50) shields.
+
+- **Click** a card to buy *and* equip instantly; **right-click** to sell back anything bought this life.
+- **Hotkeys** while open: `1–9` guns (numbers shown on each card), `L` / `H` shields.
+- You carry a **primary + sidearm** and **keep your guns when you die** (ammo refills; shields don't carry over).
+- Start with **$2,000**; kills pay **$200**, +$100 for a headshot.
+
+Real-ish damage models with head / body / leg multipliers, ADS, movement & spray inaccuracy, and a synthesized gunshot per weapon class.
 
 ## ▸ Run it locally
 
@@ -65,14 +74,14 @@ python3 -m http.server 8000
 ## ▸ Tech
 
 - **Three.js r160** via CDN import map — no bundler, no `node_modules`
-- Pointer-lock FPS controller with per-axis AABB collision, screen shake & weapon bob
-- Hitscan raycast weapons with spread, recoil & headshot hitboxes; per-weapon synthesized gunshots
-- **glTF models streamed at runtime** (`GLTFLoader` + `SkeletonUtils`) with `AnimationMixer`-driven idle/run/death bots — invisible raycast hitboxes keep headshots precise behind the chibi models, with procedural fallback on load failure
-- **Object pooling** — one shared `Raycaster`, scratch vectors, and tracer/impact mesh pools to avoid per-shot GC churn
-- Bot AI: line-of-sight checks (blocked by walls *and* smokes), wander/chase/shoot states, flash & decoy reactions
-- Multi-charge ability system, living credit economy, kill streaks, and persisted settings
-- Procedural Web Audio sound design (gunshots, hits, explosions, ability chimes, kill-streak fanfares)
-- Pure CSS UI — Valorant-style angular clip-paths, Anton + Rajdhani type, animated agent select
+- `js/enemy.js` — procedural soldier rig (hips → legs/knees, spine → arms/head) with a speed-matched walk cycle, **two-bone IK** keeping both hands on the rifle, aim pitch, recoil, hit flinches and a gravity-eased death fall; per-part hitboxes tagged head / body / legs
+- `js/nav.js` — the arena is rasterized into a nav grid; bots use **A\*** + string-pulling to route around cover
+- Bot AI: perception cone + line of sight (blocked by walls *and* smokes), reaction delay, strafe/stand/burst-fire, hunt last-known position, hear your gunfire; difficulty-scaled accuracy and damage
+- Pointer-lock FPS controller with per-axis AABB collision; lock survives death, and any lost lock falls back to pause / click-to-resume so input never gets stuck
+- Hitscan weapons with spread, bloom, recoil, ADS zoom and a scoped Operator; damage numbers, hit sparks, directional damage indicators, positional (panned) enemy gunfire
+- **Object pooling** — one shared `Raycaster`, scratch vectors, and tracer / impact / spark pools
+- Procedural canvas textures (concrete, wall panels, crates, hazard metal, sky) with world-scaled UVs
+- Pure CSS UI — Valorant-style angular clip-paths, Anton + Rajdhani type
 
 ## ▸ Disclaimer
 

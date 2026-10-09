@@ -10,6 +10,8 @@ export const DEFAULTS = {
   volume: 1,        // master SFX volume 0..1
   reducedMotion: false, // disable screen shake + flash overlays
   showFps: false,   // show the FPS counter
+  difficulty: 'normal', // bot difficulty: easy | normal | hard
+  damageNumbers: true,  // floating damage numbers on hit
 };
 
 function load() {

@@ -27,7 +27,7 @@
   <header class="landing-top">
     <div class="logo-mark"></div>
     <div class="top-meta">
-      <span class="meta-chip">BUILD 1.0</span>
+      <span class="meta-chip">BUILD 2.0</span>
       <span class="meta-chip red">REGION: BROWSER</span>
     </div>
   </header>
@@ -42,7 +42,7 @@
     </button>
     <button id="btn-settings" class="btn-ghost landing-settings">⚙ SETTINGS</button>
     <div class="landing-hints">
-      <span>WASD MOVE</span><i></i><span>SHIFT WALK</span><i></i><span>B BUY</span><i></i><span>Q / E / C / X ABILITIES</span>
+      <span>WASD MOVE</span><i></i><span>RMB AIM</span><i></i><span>B BUY</span><i></i><span>1 / 2 SWAP</span><i></i><span>C / Q / E / X ABILITIES</span><i></i><span>TAB SCORES</span>
     </div>
   </div>
   <footer class="landing-bottom">
@@ -99,11 +99,14 @@
 
     <div class="hud-top">
       <div class="scoreboard">
-        <div class="score ally" id="score-ally">0</div>
-        <div class="round-clock mono" id="round-clock">∞</div>
-        <div class="score enemy" id="score-enemy">0</div>
+        <div class="score ally"><small>YOU</small><span id="score-ally">0</span></div>
+        <div class="round-clock mono" id="round-clock">10:00</div>
+        <div class="score enemy"><small>BOTS</small><span id="score-enemy">0</span></div>
       </div>
+      <div class="goal mono" id="goal">FIRST TO 30</div>
     </div>
+    <div class="dmg-numbers" id="dmg-numbers"></div>
+    <div class="scope-overlay hidden" id="scope-overlay"><i></i><i></i></div>
 
     <div class="killfeed" id="killfeed"></div>
     <div class="fps-meter mono hidden" id="fps-meter">0</div>
@@ -111,10 +114,12 @@
     <div class="hud-bottom-left">
       <div class="hp-block">
         <div class="hp-num" id="hp-num">100</div>
-        <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
-        <div class="armor-bar"><div class="armor-fill" id="armor-fill"></div></div>
+        <div class="hp-bars">
+          <div class="armor-row"><span class="armor-num mono" id="armor-num"></span><div class="armor-bar"><div class="armor-fill" id="armor-fill"></div></div></div>
+          <div class="hp-bar"><div class="hp-fill" id="hp-fill"></div></div>
+        </div>
       </div>
-      <div class="money mono" id="money">$800</div>
+      <div class="money-row"><span class="money mono" id="money">$2,000</span><span class="reward mono" id="reward"></span><span class="buy-hint mono">B · ARMORY</span></div>
     </div>
 
     <div class="hud-bottom-center">
@@ -122,8 +127,11 @@
     </div>
 
     <div class="hud-bottom-right">
-      <div class="weapon-name" id="weapon-name">CLASSIC</div>
-      <div class="ammo"><span id="ammo-mag">12</span><span class="ammo-res mono" id="ammo-reserve">/ ∞</span></div>
+      <div class="weapon-slots" id="weapon-slots"></div>
+      <div class="weapon-card">
+        <div class="weapon-name" id="weapon-name">CLASSIC</div>
+        <div class="ammo"><span id="ammo-mag">12</span><span class="ammo-res mono" id="ammo-reserve">/ ∞</span></div>
+      </div>
     </div>
 
     <div class="announce" id="announce"></div>
@@ -132,16 +140,27 @@
     <div class="damage-vignette" id="damage-vignette"></div>
     <div class="flash-overlay" id="flash-overlay"></div>
     <div class="ult-overlay" id="ult-overlay"></div>
+    <div class="lock-prompt hidden" id="lock-prompt"><span>CLICK TO RESUME</span></div>
+  </div>
+
+  <!-- SCOREBOARD (hold TAB) -->
+  <div id="tab-board" class="tab-board hidden">
+    <h3>SCOREBOARD <em class="mono">TEAM DEATHMATCH // FIRST TO 30</em></h3>
+    <table><thead><tr><th>PLAYER</th><th>AGENT</th><th>K</th><th>D</th></tr></thead><tbody id="tab-rows"></tbody></table>
   </div>
 
   <!-- BUY MENU -->
   <div id="buy-menu" class="buy-menu hidden">
     <div class="buy-head">
-      <h3>ARMORY <em>// CREDITS</em></h3>
-      <span class="mono buy-money">$800</span>
+      <div>
+        <h3>ARMORY</h3>
+        <p class="mono buy-sub">CLICK TO BUY &amp; EQUIP · RIGHT-CLICK TO SELL BACK · YOU KEEP YOUR GUNS WHEN YOU DIE</p>
+      </div>
+      <div class="buy-wallet"><span class="mono">CREDITS</span><b class="buy-money">$2,000</b></div>
     </div>
     <div class="buy-grid" id="buy-grid"><!-- injected --></div>
-    <div class="buy-foot mono">PRESS <b>B</b> TO CLOSE — NUMBER KEYS TO QUICK-BUY — KILLS EARN CREDITS</div>
+    <div class="buy-foot mono"><span><b>1–9</b> QUICK-BUY GUNS · <b>L</b> / <b>H</b> SHIELDS</span><span><b>B</b> OR <b>ESC</b> TO CLOSE</span></div>
+    <div class="buy-toast mono" id="buy-toast"></div>
   </div>
 
   <!-- PAUSE -->
@@ -157,8 +176,23 @@
   <!-- DEATH -->
   <div id="death-screen" class="death-screen hidden">
     <div class="death-box">
-      <h3>YOU DIED</h3>
-      <p class="mono" id="death-info">RESPAWNING…</p>
+      <p class="mono death-by">ELIMINATED BY</p>
+      <h3 id="death-killer">BOT</h3>
+      <p class="mono" id="death-info">RESPAWNING IN 3</p>
+      <p class="mono death-tip">YOUR GUNS ARE KEPT · PRESS <b>B</b> TO SHOP</p>
+    </div>
+  </div>
+
+  <!-- MATCH END -->
+  <div id="match-end" class="match-end hidden">
+    <div class="end-box">
+      <p class="mono end-mode">TEAM DEATHMATCH // FORGE</p>
+      <h2 id="end-title">VICTORY</h2>
+      <div class="end-stats" id="end-stats"></div>
+      <div class="end-actions">
+        <button id="btn-again" class="btn-primary"><span class="btn-text">PLAY AGAIN</span><span class="btn-arrow">▸</span></button>
+        <button id="btn-end-menu" class="btn-ghost">AGENT SELECT</button>
+      </div>
     </div>
   </div>
 </section>
@@ -186,6 +220,14 @@
     <div class="setting-row toggle">
       <label>REDUCED MOTION <small>screen shake &amp; flashes</small></label>
       <button id="set-motion" class="set-switch" role="switch"><span></span></button>
+    </div>
+    <div class="setting-row toggle">
+      <label>BOT DIFFICULTY</label>
+      <div class="seg" id="set-diff"><button data-v="easy">EASY</button><button data-v="normal">NORMAL</button><button data-v="hard">HARD</button></div>
+    </div>
+    <div class="setting-row toggle">
+      <label>DAMAGE NUMBERS</label>
+      <button id="set-dmgnum" class="set-switch" role="switch"><span></span></button>
     </div>
     <div class="setting-row toggle">
       <label>SHOW FPS</label>
